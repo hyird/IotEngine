@@ -18,6 +18,7 @@
 #include "service/middleware/log.h"
 #include "service/features/packet_log/packet_log.transport.h"
 #include "service/features/gb28181/media/media.transport.h"
+#include "tests/network_port.fixture.h"
 
 namespace {
 
@@ -141,7 +142,7 @@ int main() {
         config.httpPort = 0;
         config.rtspPort = 0;
         config.rtmpPort = 0;
-        config.rtcPort = 0;
+        config.rtcPort = test::reserveTcpUdpPort();
         config.srtPort = 0;
         config.rtpPortRangeStart = 0;
         config.rtpPortRangeEnd = 0;

@@ -13,6 +13,7 @@
 #include <ruvia/web/http_client.h>
 
 #include "service/features/gb28181/media/media.transport.h"
+#include "tests/network_port.fixture.h"
 
 using namespace std::chrono_literals;
 
@@ -154,6 +155,7 @@ int main() {
         media.rtpPublicIp = "127.0.0.1";
         media.logLevel = 4;
         media.httpPort = media.rtspPort = media.rtmpPort = media.rtcPort = media.srtPort = 0;
+        media.rtcPort = test::reserveTcpUdpPort();
         sdkSupervisor().configure(media);
         sdkSupervisor().start();
         asio::io_context reserveIo;

@@ -27,6 +27,7 @@
 #include "service/features/gb28181/media/media.transport.h"
 #include "service/features/gb28181/sip/sip.protocol.h"
 #include "service/features/gb28181/sip/sip.transport.h"
+#include "tests/network_port.fixture.h"
 
 namespace {
 
@@ -34,31 +35,6 @@ void require(bool condition, std::string_view message) {
     if (!condition) {
         throw std::runtime_error(std::string(message));
     }
-}
-
-std::uint16_t reserveLocalPort() {
-    asio::io_context context;
-    std::error_code lastError;
-    std::uint16_t lastPort = 0;
-    // Let UDP choose a permitted port first; sequential TCP ephemeral ports can
-    // all fall inside the same Windows UDP exclusion range.
-    for (int attempt = 0; attempt < 32; ++attempt) {
-        asio::ip::udp::socket udpReservation(context);
-        udpReservation.open(asio::ip::udp::v4(), lastError);
-        if (lastError) continue;
-        udpReservation.bind(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), 0), lastError);
-        if (lastError) continue;
-        lastPort = udpReservation.local_endpoint(lastError).port();
-        if (lastError) continue;
-        asio::ip::tcp::acceptor tcpReservation(context);
-        tcpReservation.open(asio::ip::tcp::v4(), lastError);
-        if (lastError) continue;
-        tcpReservation.bind(asio::ip::tcp::endpoint(asio::ip::address_v4::loopback(), lastPort), lastError);
-        if (lastError) continue;
-        return lastPort;
-    }
-    throw std::runtime_error("could not reserve a shared TCP/UDP loopback port; last port=" +
-                             std::to_string(lastPort) + ", error=" + lastError.message());
 }
 
 std::uint16_t reserveLocalUdpPort(const asio::ip::address& address) {
@@ -382,7 +358,7 @@ void verifyKeepaliveExpiry(service::common::UuidV7Generator& uuidGenerator, std:
     server->stop();
     server.reset();
 
-    sip.port = reserveLocalPort();
+    sip.port = test::reserveTcpUdpPort();
     sip.transport = "udp";
     sip.registrationTimeoutSeconds = 1;
     server = std::make_shared<SipServer>(uuidGenerator, sip, media, devices, zlm, loop);
@@ -432,7 +408,7 @@ void verifyDualUdpWorkerOwnership(const SipConfig& baseSip, const MediaConfig& m
 
     SipConfig sip = baseSip;
     sip.transport = "udp";
-    sip.port = reserveLocalPort();
+    sip.port = test::reserveTcpUdpPort();
     sip.registrationTimeoutSeconds = 30;
     DeviceRegistry firstDevices;
     DeviceRegistry secondDevices;
@@ -789,7 +765,7 @@ int main() {
         sip.id = "34020000002000000001";
         sip.host = "127.0.0.1";
         sip.publicIp = "127.0.0.1";
-        sip.port = reserveLocalPort();
+        sip.port = test::reserveTcpUdpPort();
         sip.password = "test";
         sip.transport = "both";
         sip.registrationTimeoutSeconds = 30;
@@ -803,7 +779,7 @@ int main() {
         media.httpPort = 0;
         media.rtspPort = 0;
         media.rtmpPort = 0;
-        media.rtcPort = 0;
+        media.rtcPort = test::reserveTcpUdpPort();
         media.srtPort = 0;
         media.rtpPortRangeStart = 0;
         media.rtpPortRangeEnd = 0;
