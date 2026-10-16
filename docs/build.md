@@ -49,12 +49,18 @@ cmake --build build --config Release --parallel
 ctest --test-dir build --build-config Release --output-on-failure
 ```
 
+CI 在两平台都排除 `gb28181-sip`，其 IPv6 UDP 回环场景在部分运行环境无法可靠投递；
+本地完整 CTest 仍保留该测试，失败须单独记录，不能计入通过。
+媒体与 SIP 测试会同时探测 TCP/UDP 可绑定端口，避免 Windows 两种协议的保留端口区段不同导致启动失败。
+
 根 `CMakeLists.txt` 未显式指定 `CMAKE_TOOLCHAIN_FILE` 时从 `VCPKG_ROOT` 选择 vcpkg 工具链；
 Windows 默认使用与静态 MSVC 运行库匹配的 `x64-windows-static` triplet。
 首次配置会编译全部 vcpkg 端口，耗时较长；设置 `VCPKG_DEFAULT_BINARY_CACHE` 可复用二进制包。
 
-当前固定 Ruvia `3a10c4b993ae5307d65387fe5ae5cfe3bb8e0c5d`，直接使用经 SHA-256 校验的上游归档，不应用本地 Ruvia 补丁。
-该版本包含 HTTP/1 消息边界、请求与响应生命周期、取消注册、Redis 重连及 SQL 表限定符作用域的修复。
+当前固定 Ruvia `c8d871b8c9f98625c5cdc00a86463c66d4d36cea`，直接使用经 SHA-256 校验的上游归档，不应用本地 Ruvia 补丁。
+该版本在此前 HTTP/1 消息边界、请求与响应生命周期、取消注册、Redis 重连及 SQL 表限定符作用域修复的基础上，
+将监听和连接接入归还各 Worker，并在已完成的会话任务回收前关闭 TCP 连接；现有业务公开 API 无需迁移。
+Linux 监听依赖 `SO_REUSEPORT`；Windows 使用 `SO_REUSEADDR`，不保证连接均匀分配，也不独占监听端口。
 查询参数按需建立多值索引，PostgreSQL 参数复用已拥有的文本存储，Redis 类型化结果接管返回值存储；这些内部调整无需改动现有业务调用。
 上游已移除 `db_expressions`；系统管理、协议与链路模块统一使用公开 `db_query` 持有表达式，
 保持参数绑定、事务及表达式存储生命周期，不增加兼容包装。
@@ -62,7 +68,7 @@ SQL 与 Redis 字段名通过实体公开的 `column_index<...>()`、`columns_ty
 替代已移除的 `column_name()`，仍由实体检查字段归属，数据库列名及 Redis Lua 参数键不变。
 直接读取列描述可避免在协程表达式中使用字段引用类型触发 MSVC 内部编译错误。
 `file_response_options::path_` 借用文件路径，调用 `c.file()` 时须传入仍然存活的具名路径；
-`firmware-download` 回归测试覆盖路径生命周期、中文文件名、完整下载、HEAD 和 Range。
+`firmware-download` 回归测试启动两个独立监听的 Worker，覆盖路径生命周期、中文文件名、完整下载、HEAD 和 Range。
 
 管理端、后台媒体代理及测试 Controller 使用无框架基类的 `final` 类，并通过
 `RUVIA_ROUTES_BEGIN(Type)` 声明路由；Middleware 直接满足公开概念，不再继承框架类型。

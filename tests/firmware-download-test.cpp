@@ -96,7 +96,7 @@ void serveAndVerify(const std::filesystem::path& path, const std::string& conten
     auto started = ready.get_future();
     app.get_blocking_pool(nullptr)
         .listen({.address_ = "127.0.0.1", .http_ = port})
-        .server({.worker_count_ = 1})
+        .server({.worker_count_ = 2})
         .use_worker_state<std::filesystem::path>([path] { return path; })
         .on_start([&] { ready.set_value(); });
     std::exception_ptr serverError;
@@ -142,7 +142,7 @@ int main() {
         serveAndVerify(path, content);
         std::filesystem::remove(path);
         std::filesystem::remove(directory);
-        std::cout << "Firmware file lifetime, Unicode path, GET, HEAD and Range passed\n";
+        std::cout << "Worker-local listeners, firmware file lifetime, Unicode path, GET, HEAD and Range passed\n";
         return 0;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
