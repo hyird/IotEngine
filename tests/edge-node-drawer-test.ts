@@ -1,10 +1,7 @@
 import { expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(
-    new URL('../web/pages/edge_node/index.tsx', import.meta.url),
-    'utf8'
-);
+const source = readFileSync(new URL('../web/pages/edge_node/index.tsx', import.meta.url), 'utf8');
 const deviceSource = readFileSync(
     new URL('../web/pages/device/index.tsx', import.meta.url),
     'utf8'
@@ -145,13 +142,13 @@ test('edge bridge routes commit before configuration is queued', () => {
 
 test('Hub firewall still isolates Windows clients from unauthorized Edge tunnels', () => {
     expect(vpnBackend).toContain(
-        'addresses.aggregate("string_agg", { addresses.column(service::vpn::persistence::VpnEffectiveEdgeAccessEntity::column_name<"edge_address">(), "access")'
+        'addresses.aggregate("string_agg", { addresses.column(std::tuple_element_t<service::vpn::persistence::VpnEffectiveEdgeAccessEntity::column_index<"edge_address">(), service::vpn::persistence::VpnEffectiveEdgeAccessEntity::columns_type>::name.view(), "access")'
     );
     expect(vpnBackend).toContain(
         '.from(service::vpn::persistence::VpnEffectiveEdgeAccessEntity::table_name(), "access")'
     );
     expect(vpnBackend).toContain(
-        'addresses.column(service::vpn::persistence::VpnEffectiveEdgeAccessEntity::column_name<"peer_id">(), "access"), Op::equal, addresses.column(service::vpn::persistence::VpnPeerEntity::column_name<"id">(), "p")'
+        'addresses.column(std::tuple_element_t<service::vpn::persistence::VpnEffectiveEdgeAccessEntity::column_index<"peer_id">(), service::vpn::persistence::VpnEffectiveEdgeAccessEntity::columns_type>::name.view(), "access"), Op::equal, addresses.column(std::tuple_element_t<service::vpn::persistence::VpnPeerEntity::column_index<"id">(), service::vpn::persistence::VpnPeerEntity::columns_type>::name.view(), "p")'
     );
     expect(vpnBackend).toContain('peerRecord.edgeAddresses');
     expect(vpnBackend).toContain('client.edgeAddresses.push_back');
